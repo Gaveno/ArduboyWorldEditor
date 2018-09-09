@@ -1,0 +1,4 @@
+/////////////////////
+// guiExists(guiID);
+/////////////////////
+return (instance_exists(argument0));
