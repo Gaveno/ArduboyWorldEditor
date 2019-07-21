@@ -6,7 +6,7 @@
   <depth>50</depth>
   <persistent>0</persistent>
   <parentName>&lt;undefined&gt;</parentName>
-  <maskName>&lt;undefined&gt;</maskName>
+  <maskName>sprBlankChunk</maskName>
   <events>
     <event eventtype="0" enumb="0">
       <action>
@@ -27,6 +27,94 @@
             <kind>1</kind>
             <string>index = 0;
 cused = 0;
+myChunk = noone;
+
+oid = noone;
+
+// timer to check for deletion
+alarm[1] = 60;
+</string>
+          </argument>
+        </arguments>
+      </action>
+    </event>
+    <event eventtype="2" enumb="1">
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>/// check deletion
+if (objControl.specchunk[| index] != id) {
+    for (var i = 0; i &lt; ds_list_size(objControl.specchunk); i++) {
+        objControl.specchunk[| i].index = i;
+    }
+}
+if (objControl.specchunk[| index] != id) {
+    instance_destroy();
+}
+
+alarm[1] = 60;
+</string>
+          </argument>
+        </arguments>
+      </action>
+    </event>
+    <event eventtype="2" enumb="0">
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>if (id &lt; oid)
+    destroySpecChunk(id);
+</string>
+          </argument>
+        </arguments>
+      </action>
+    </event>
+    <event eventtype="4" ename="objSpecChunk">
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>//destroySpecChunk(id);
+oid = other;
+alarm[0] = 1;
 </string>
           </argument>
         </arguments>
@@ -51,14 +139,15 @@ cused = 0;
             <kind>1</kind>
             <string>/// select chunk to use
 
-if (keyboard_check(vk_control)) {
-    ds_list_delete(objControl.specchunk, index);
-    instance_destroy();
-}
-else if (gui_focus == objControl.main_gui) {
-    objControl.specific_chunk = id;
-    with objControl {
-        openSelectChunk(true);
+if (guiGetSelection(objControl.main_select) == objControl.btn_place_chunk) {
+    if (keyboard_check(vk_control)) {
+        destroySpecChunk(id);
+    }
+    else if (gui_focus == objControl.main_gui) {
+        objControl.specific_chunk = id;
+        with objControl {
+            openSelectChunk(true);
+        }
     }
 }
 </string>
@@ -142,8 +231,9 @@ else
     if (instance_exists(myChunk) &amp;&amp; sprite_exists(myChunk.sprite_index)) {
         myChunk.is_used = true;
         sprite_index = myChunk.sprite_index;
-    } else
-        sprite_index = sprBlankChunk;
+    } else {
+        destroySpecChunk(id);
+    }
 }
 
 

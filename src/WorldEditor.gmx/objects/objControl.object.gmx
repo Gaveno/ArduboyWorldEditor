@@ -38,7 +38,9 @@ region = ds_list_create();
 specchunk = ds_list_create();
 object = ds_list_create();
 specobject = ds_list_create();
+spectile = ds_list_create();
 chunk_selected = 0;
+tile_selected = 0;
 
 tooltip = 1;
 previous_mouse_x = 0;
@@ -59,6 +61,19 @@ world_size = world_chunks_width * world_chunks_height;
 for (var i = 0; i &lt; world_size; i++) {
     chunk_state[i] = 0; // not solid
 }
+
+zoom_level = 1;
+zoom_start_w = view_wview;
+zoom_start_h = view_hview;
+
+custom_tiles = -1;
+custom_num_empty = 7;
+custom_tiles_path = "";
+custom_num_tiles = sprite_get_number(sprTiles);
+
+player_x = 0;
+player_y = 0;
+player_image = 0;
 </string>
           </argument>
         </arguments>
@@ -96,6 +111,8 @@ save_first_gui = noone;
 confirm_delete_gui = noone;
 object_editor_gui = noone;
 export_gui = noone;
+tile_edit_gui = noone;
+door_dest_gui = noone;
 
 // export_gui
 btn_e_x = noone;
@@ -120,9 +137,12 @@ btn_file_menu = guiGetObject(main_gui, 3);
 btn_place_object = guiGetObject(main_gui, 2);
 btn_place_chunk = guiGetObject(main_gui, 4);
 btn_place_solid = guiGetObject(main_gui, 9);
+btn_place_player = guiGetObject(main_gui, 30);
+btn_place_tile = guiGetObject(main_gui, 31);
 btn_edit_object = guiGetObject(main_gui, 6);
 btn_edit_chunk = guiGetObject(main_gui, 7);
 btn_edit_region = guiGetObject(main_gui, 8);
+btn_edit_tile = guiGetObject(main_gui, 29);
 btn_world_name = guiGetObject(main_gui, 11);
 btn_world_name.myInputBox = true;
 btn_world_name.myInputType = INPUT_TYPE_STRING;
@@ -136,8 +156,13 @@ btn_show_regions = guiGetObject(main_gui, 20);
 btn_show_regions.myCheckBox = true;
 btn_show_objects = guiGetObject(main_gui, 18);
 btn_show_objects.myCheckBox = true;
+btn_zoom_p = guiGetObject(main_gui, 23);
+btn_zoom_m = guiGetObject(main_gui, 22);
+box_mini_map = guiGetObject(main_gui, 24);
+box_zoom_level = guiGetObject(main_gui, 25);
 
-main_select = guiCreateSelection(main_gui, btn_place_object, btn_place_chunk, btn_place_solid);
+main_select = guiCreateSelection(main_gui, btn_place_object,
+     btn_place_chunk, btn_place_solid, btn_place_player, btn_place_tile);
 
 //file
 btn_file_new = noone;
@@ -263,6 +288,33 @@ if (guiExists(region_sel_gui))
         </arguments>
       </action>
     </event>
+    <event eventtype="2" enumb="1">
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>/// export
+
+exportWorld2(__name, __savei, __savec);
+
+guiDestroy(export_wait_gui);
+</string>
+          </argument>
+        </arguments>
+      </action>
+    </event>
     <event eventtype="3" enumb="0">
       <action>
         <libid>1</libid>
@@ -339,6 +391,55 @@ if (guiCheckButton(btn_edit_region)) {
         btn_rs_region[i].starty = btn_rs_region[i].y;
         if (region_selected == i)
             btn_rs_region[i].myColor = c_green;
+    }
+}
+
+// edit tiles
+if (guiCheckButton(btn_edit_tile)) {
+    tile_edit_gui = guiLoad("TileEdit.gui", 100, 100);
+    tile_edit_gui.custom_tiles = custom_tiles;
+    tile_edit_gui.iname = "";
+    btn_te_emptytiles = guiGetObject(tile_edit_gui, 3);
+    btn_te_emptytiles.myInputBox = true;
+    btn_te_emptytiles.myInputType = INPUT_TYPE_INT;
+    btn_te_emptytiles.myText = string(custom_num_empty);
+    btn_te_emptytiles.myInputValueInt = custom_num_empty;
+    btn_te_import = guiGetObject(tile_edit_gui, 4);
+    btn_te_save = guiGetObject(tile_edit_gui, 5);
+    btn_te_close = guiGetObject(tile_edit_gui, 6);
+    box_te_tiles = guiGetObject(tile_edit_gui, 1);
+    box_te_tiles.num_empty = 0;
+    btn_te_shiftm = guiGetObject(tile_edit_gui, 9);
+    btn_te_shiftm.tooltip = "Shift every chunks solid tiles left (-) by 1.#Happens right away!";
+    btn_te_shiftp = guiGetObject(tile_edit_gui, 10);
+    btn_te_shiftp.tooltip = "Shift every chunks solid tiles right (+) by 1.#Happens right away!";
+    tile_edit_gui.num_tiles = custom_num_tiles;
+    if (sprite_exists(custom_tiles)) {
+        box_te_tiles.sprite_index = createTileImage(custom_tiles, custom_num_empty);
+    }
+    else {
+        box_te_tiles.sprite_index = createTileImage(sprTiles, custom_num_empty);
+    }
+}
+
+// zoom
+if (guiCheckButton(btn_zoom_m)) {
+    if (zoom_level &lt; 3) {
+        zoom_level += 0.1;
+        view_wview = zoom_start_w * zoom_level;
+        view_hview = zoom_start_h * zoom_level;
+        box_zoom_level.myText = stringChopN(string(1 / zoom_level * 100), ".", 0) + "%";
+        box_zoom_level.myStateChange = true;
+    }
+}
+
+if (guiCheckButton(btn_zoom_p)) {
+    if (zoom_level &gt; 0.5) {
+        zoom_level -= 0.1;
+        view_wview = zoom_start_w * zoom_level;
+        view_hview = zoom_start_h * zoom_level;
+        box_zoom_level.myText = stringChopN(string(1 / zoom_level * 100), ".", 0) + "%";
+        box_zoom_level.myStateChange = true;
     }
 }
 </string>
@@ -608,6 +709,13 @@ if (guiExists(object_sel_gui)) {
             specific_object.IID = btn_os_iid.myInputValueInt;
             specific_object.name = btn_os_name.myText;
             guiDestroy(object_sel_gui);
+            
+            /*if (specific_object.image_index == 3) {
+                // door
+                door_dest_gui = guiLoad("DoorDestination.gui", 200, 10);
+                guiMoveTo(door_dest_gui, display_get_gui_width() / 2 - door_dest_gui.myWidth / 2, 10);
+                btn_dd_cancel = guiGetObject(door_dest_gui, 1);
+            }*/
             exit;
         }
     }
@@ -674,10 +782,14 @@ if (guiExists(chunk_sel_gui)) {
     var size = 0;
     if (ds_list_size(chunk) &gt; 1) {
         size = btn_cs_chunk[1].y - btn_cs_chunk[0].y;
-        y_max_offset = max(0, size * ds_list_size(chunk) - size * 3);
+        y_max_offset = max(0, size * ds_list_size(chunk) - size * 6);
     }
     // Cancel
     if (guiCheckButton(btn_cs_cancel)) {
+        if (instance_exists(specific_chunk) &amp;&amp; specific_chunk.myChunk == noone) {
+            ds_list_delete(specchunk, specific_chunk.index);
+            instance_destroy(specific_chunk);
+        }
         guiDestroy(chunk_sel_gui);
         exit;
     }
@@ -714,10 +826,11 @@ if (guiExists(chunk_sel_gui)) {
     }
     
     // Scroll
-    var scroll_speed = size;
+    var scroll_speed = size / 3;
     
     // Scroll down
-    if (guiCheckButton(btn_cs_prev)) {
+    //if (guiCheckButton(btn_cs_prev)) {
+    if (btn_cs_prev.myPressed) {
         if (scroll &lt; y_max_offset) {
             scroll += scroll_speed;
             for (var i = 0; i &lt; ds_list_size(chunk); i++) {
@@ -727,12 +840,33 @@ if (guiExists(chunk_sel_gui)) {
         }
     }
     
+    if (btn_cs_pprev.myPressed) {
+        if (scroll &lt; y_max_offset) {
+            scroll += scroll_speed * 3;
+            for (var i = 0; i &lt; ds_list_size(chunk); i++) {
+                btn_cs_chunk[i].y -= scroll_speed * 3;
+                btn_cs_chunk[i].myStateChange = true;
+            }
+        }
+    }
+    
     // Scroll up
-    if (guiCheckButton(btn_cs_next)) {
+    //if (guiCheckButton(btn_cs_next)) {
+    if (btn_cs_next.myPressed) {
         if (scroll &gt; 0) {
             scroll -= scroll_speed;
             for (var i = 0; i &lt; ds_list_size(chunk); i++) {
                 btn_cs_chunk[i].y += scroll_speed;
+                btn_cs_chunk[i].myStateChange = true;
+            }
+        }
+    }
+    
+    if (btn_cs_nnext.myPressed) {
+        if (scroll &gt; 0) {
+            scroll -= scroll_speed * 3;
+            for (var i = 0; i &lt; ds_list_size(chunk); i++) {
+                btn_cs_chunk[i].y += scroll_speed * 3;
                 btn_cs_chunk[i].myStateChange = true;
             }
         }
@@ -745,14 +879,30 @@ if (guiExists(chunk_sel_gui)) {
         btn_ce_save.tooltip = "Save changes and close chunk editor.";
         btn_ce_cancel = guiGetObject(chunk_editor_gui, 39);
         btn_ce_cancel.tooltip = "Discard changes and close chunk editor.";
+        btn_ce_shiftp = guiGetObject(chunk_editor_gui, 44);
+        btn_ce_shiftm = guiGetObject(chunk_editor_gui, 45);
+        btn_ce_export = guiGetObject(chunk_editor_gui, 48);
+        btn_ce_load = guiGetObject(chunk_editor_gui, 49);
+        btn_ce_changeall = guiGetObject(chunk_editor_gui, 46);
         btn_ce_name = guiGetObject(chunk_editor_gui, 40);
         btn_ce_name.tooltip = "The name of the chunk. Used for clarity.";
         btn_ce_name.myInputBox = true;
         btn_ce_name.myInputType = INPUT_TYPE_STRING;
         btn_ce_name.myText = chunk[| chunk_selected].name;
+        btn_ce_shiftsolid = guiGetObject(chunk_editor_gui, 51);
+        btn_ce_shiftsolid.myCheckBox = true;
+        btn_ce_shiftsolid.myChecked = true;
+        btn_ce_shiftsolid.sprite_index = sprCheck;
+        btn_ce_shiftnonsolid = guiGetObject(chunk_editor_gui, 52);
+        btn_ce_shiftnonsolid.myCheckBox = true;
+        btn_ce_shiftnonsolid.myChecked = true;
+        btn_ce_shiftnonsolid.sprite_index = sprCheck;
+        var spr;
+        if (sprite_exists(custom_tiles)) spr = custom_tiles;
+        else spr = sprTiles;
         for (var i = 0; i &lt; 36; i++) {
             btn_ce_tile[i] = guiGetObject(chunk_editor_gui, 2 + i);
-            btn_ce_tile[i].sprite_index = sprTiles;
+            btn_ce_tile[i].sprite_index = spr;
             btn_ce_tile[i].image_speed = 0;
             btn_ce_tile[i].image_index = chunk[| chunk_selected].tile[i];
             btn_ce_tile[i].myText = " ";
@@ -842,26 +992,86 @@ if (guiExists(chunk_editor_gui)) {
         exit;
     }
     
+    // export
+    if (guiCheckButton(btn_ce_export)) {
+        var save = get_save_filename("Arduventure Chunk File|*.acf", btn_ce_name.myText + ".acf");
+        if (is_string(save) &amp;&amp; string_length(save) &gt; 1) {
+            var file = file_text_open_write(save);
+            file_text_write_string(file, btn_ce_name.myText);
+            file_text_writeln(file);
+            for (var i = 0; i &lt; 36; i++) {
+                file_text_write_string(file, string(btn_ce_tile[i].image_index));
+                file_text_writeln(file);
+            }
+            file_text_close(file);
+        }
+    }
+    
+    // load
+    if (guiCheckButton(btn_ce_load)) {
+        var load = get_open_filename("Arduventure Chunk File|*.acf", btn_ce_name.myText + ".acf");
+        if (is_string(load) &amp;&amp; string_length(load) &gt; 1) {
+            var file = file_text_open_read(load);
+            btn_ce_name.myText = file_text_read_string(file);
+            file_text_readln(file);
+            for (var i = 0; i &lt; 36; i++) {
+                btn_ce_tile[i].image_index = real(file_text_read_string(file));
+                file_text_readln(file);
+            }
+            file_text_close(file);
+            btn_ce_name.myStateChange = true;
+        }
+    }
+    
+    if (guiCheckButton(btn_ce_shiftp)) {
+        for (var i = 0; i &lt; 36; i++) {
+            if (btn_ce_tile[i].image_index &lt; sprite_get_number(sprTiles) - 1 &amp;&amp;
+            ((btn_ce_tile[i].image_index &lt; custom_num_empty &amp;&amp; btn_ce_shiftnonsolid.myChecked) ||
+            btn_ce_tile[i].image_index &gt;= custom_num_empty &amp;&amp; btn_ce_shiftsolid.myChecked)) {
+                btn_ce_tile[i].image_index++;
+            }
+        }
+        btn_ce_shiftp.myStateChange = true;
+    }
+    
+    if (guiCheckButton(btn_ce_shiftm)) {
+        for (var i = 0; i &lt; 36; i++) {
+            if (btn_ce_tile[i].image_index &gt; 0 &amp;&amp;
+            ((btn_ce_tile[i].image_index &lt; custom_num_empty &amp;&amp; btn_ce_shiftnonsolid.myChecked) ||
+            btn_ce_tile[i].image_index &gt;= custom_num_empty &amp;&amp; btn_ce_shiftsolid.myChecked)) {
+                btn_ce_tile[i].image_index--;
+            }
+        }
+        btn_ce_shiftm.myStateChange = true;
+    }
+    
+    // change all
+    if (guiCheckButton(btn_ce_changeall)) {
+        tile_selected = 255;
+        /*tile_sel_gui = guiLoad("TileSelect.gui", 80, 80);
+        btn_ts_next = guiGetObject(tile_sel_gui, 18);
+        btn_ts_next.tooltip = "Show next page of tiles.";
+        btn_ts_prev = guiGetObject(tile_sel_gui, 19);
+        btn_ts_prev.tooltip = "Show previous page of tiles.";
+        btn_ts_cancel = guiGetObject(tile_sel_gui, 20);
+        btn_ts_cancel.tooltip = "Close tile selection without selecting a tile.";
+        tile_start = 0;
+        for (var a = 0; a &lt; 16; a++) {
+            btn_ts_tile[a] = guiGetObject(tile_sel_gui, 2 + a);
+            btn_ts_tile[a].sprite_index = sprTiles;
+            btn_ts_tile[a].image_speed = 0;
+            btn_ts_tile[a].image_index = a;
+            btn_ts_tile[a].myText = " ";
+            btn_ts_tile[a].tooltip = "Click to select this tile.";
+        }*/
+        openTileSelect(false);
+    }
+    
     // tile
     for (var i = 0; i &lt; 36; i++) {
         if (guiCheckButton(btn_ce_tile[i])) {
             tile_selected = i;
-            tile_sel_gui = guiLoad("TileSelect.gui", 80, 80);
-            btn_ts_next = guiGetObject(tile_sel_gui, 18);
-            btn_ts_next.tooltip = "Show next page of tiles.";
-            btn_ts_prev = guiGetObject(tile_sel_gui, 19);
-            btn_ts_prev.tooltip = "Show previous page of tiles.";
-            btn_ts_cancel = guiGetObject(tile_sel_gui, 20);
-            btn_ts_cancel.tooltip = "Close tile selection without selecting a tile.";
-            tile_start = 0;
-            for (var a = 0; a &lt; 16; a++) {
-                btn_ts_tile[a] = guiGetObject(tile_sel_gui, 2 + a);
-                btn_ts_tile[a].sprite_index = sprTiles;
-                btn_ts_tile[a].image_speed = 0;
-                btn_ts_tile[a].image_index = a;
-                btn_ts_tile[a].myText = " ";
-                btn_ts_tile[a].tooltip = "Click to select this tile.";
-            }
+            openTileSelect(false);
         }
     }
 }
@@ -928,7 +1138,8 @@ if (guiExists(region_sel_gui)) {
     var scroll_speed = size / 3;
     
     // Scroll down
-    if (guiCheckButton(btn_rs_prev)) {
+    //if (guiCheckButton(btn_rs_prev)) {
+    if (btn_rs_prev.myPressed) {
         if (scroll &lt; y_max_offset) {
             scroll += scroll_speed;
             for (var i = 0; i &lt; ds_list_size(region); i++) {
@@ -939,7 +1150,8 @@ if (guiExists(region_sel_gui)) {
     }
     
     // Scroll up
-    if (guiCheckButton(btn_rs_next)) {
+    //if (guiCheckButton(btn_rs_next)) {
+    if (btn_rs_next.myPressed) {
         if (scroll &gt; 0) {
             scroll -= scroll_speed;
             for (var i = 0; i &lt; ds_list_size(region); i++) {
@@ -951,7 +1163,7 @@ if (guiExists(region_sel_gui)) {
     
     // Region edit
     if (guiCheckButton(btn_rs_edit) &amp;&amp; ds_list_size(region) &gt; 0) {
-        region_editor_gui = guiLoad("RegionEdit.gui", 80, 80);
+        region_editor_gui = guiLoad("RegionEdit.gui", 65, 80);
         btn_re_save = guiGetObject(region_editor_gui, 4);
         btn_re_save.tooltip = "Save changes and close.";
         btn_re_cancel = guiGetObject(region_editor_gui, 5);
@@ -1198,6 +1410,10 @@ if (guiExists(region_editor_gui)) {
             <string>/// button handling - tile_sel_gui
 
 if (guiExists(tile_sel_gui)) {
+    var spr;
+    if (sprite_exists(custom_tiles)) spr = custom_tiles;
+    else spr = sprTiles;
+
     // cancel
     if (guiCheckButton(btn_ts_cancel)) {
         guiDestroy(tile_sel_gui);
@@ -1205,10 +1421,10 @@ if (guiExists(tile_sel_gui)) {
     
     // next
     if (guiCheckButton(btn_ts_next)) {
-        if (tile_start + 16 &lt; sprite_get_number(sprTiles)) {
+        if (tile_start + 16 &lt; sprite_get_number(spr)) {
             tile_start += 16;
             for (var i = 0; i &lt; 16; i++) {
-                if (tile_start + i &lt; sprite_get_number(sprTiles)) {
+                if (tile_start + i &lt; sprite_get_number(spr)) {
                     btn_ts_tile[i].image_index = tile_start + i;
                     btn_ts_tile[i].visible = true;
                     btn_ts_tile[i].myStateChange = true;
@@ -1225,27 +1441,162 @@ if (guiExists(tile_sel_gui)) {
         if (tile_start &gt; 0) {
             tile_start -= 16;
             for (var i = 0; i &lt; 16; i++) {
-                for (var i = 0; i &lt; 16; i++) {
-                    if (tile_start + i &lt; sprite_get_number(sprTiles)) {
-                        btn_ts_tile[i].image_index = tile_start + i;
-                        btn_ts_tile[i].visible = true;
-                        btn_ts_tile[i].myStateChange = true;
-                    }
-                    else {
-                        btn_ts_tile[i].visible = false;
-                    }
+                if (tile_start + i &lt; sprite_get_number(spr)) {
+                    btn_ts_tile[i].image_index = tile_start + i;
+                    btn_ts_tile[i].visible = true;
+                    btn_ts_tile[i].myStateChange = true;
+                }
+                else {
+                    btn_ts_tile[i].visible = false;
                 }
             }
         }
     }
     
     // tile buttons
-    for (var i = 0; i &lt; 16; i++) {
-        if (guiCheckButton(btn_ts_tile[i])) {
-            btn_ce_tile[tile_selected].image_index = btn_ts_tile[i].image_index;
-            btn_ce_tile[tile_selected].myStateChange = true;
-            guiDestroy(tile_sel_gui);
-            exit;
+    for (var i = 0; i &lt; 90; i++) {
+        if (instance_exists(btn_ts_tile[i]) &amp;&amp; guiCheckButton(btn_ts_tile[i])) {
+            if (tile_sel_gui.specific_tile) {
+                specific_tile.tile = btn_ts_tile[i].image_index;
+                guiDestroy(tile_sel_gui);
+                exit;
+            }
+            else {
+                if (tile_selected &lt; 255) {
+                    btn_ce_tile[tile_selected].image_index = btn_ts_tile[i].image_index;
+                    btn_ce_tile[tile_selected].myStateChange = true;
+                    guiDestroy(tile_sel_gui);
+                    exit;
+                }
+                else {
+                    btn_ce_tile[0].myStateChange = true;
+                    for (var a = 0; a &lt; NUM_TILES_IN_CHUNK; a++) {
+                        btn_ce_tile[a].image_index = btn_ts_tile[i].image_index;
+                    }
+                    guiDestroy(tile_sel_gui);
+                    exit;
+                }
+            }
+        }
+    }
+}
+</string>
+          </argument>
+        </arguments>
+      </action>
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>/// button handling - tile_edit_gui
+
+if (guiExists(tile_edit_gui)) {
+    
+    // import
+    if (guiCheckButton(btn_te_import)) {
+        var iname = get_open_filename("PNG Image File|*.png", "");
+        if (is_string(iname) &amp;&amp; string_length(iname) &gt; 1 &amp;&amp; file_exists(iname)) {
+            tile_edit_gui.iname = iname;
+            var sub = get_integer("How many tiles are in this set?", tile_edit_gui.num_tiles);
+            if (sub &gt; 0) {
+                var temp = sprite_add(iname, sub, false, false, 0, 0);
+                if (sprite_get_width(temp) != 16 || sprite_get_height(temp) != 16) {
+                    show_message("Error: tiles must be 16x16 pixels!");
+                    sprite_delete(temp);
+                }
+                else {
+                    if (sprite_exists(tile_edit_gui.custom_tiles)) {
+                        sprite_delete(tile_edit_gui.custom_tiles);
+                    }
+                    tile_edit_gui.custom_tiles = temp;
+                    tile_edit_gui.num_tiles = sub;
+                    sprite_delete(box_te_tiles.sprite_index);
+                    box_te_tiles.num_empty = real(btn_te_emptytiles.myText)
+                    show_debug_message(string(box_te_tiles.num_empty));
+                    box_te_tiles.sprite_index = createTileImage(tile_edit_gui.custom_tiles, box_te_tiles.num_empty);
+                    box_te_tiles.myStateChange = true;
+                }
+            }
+        }
+    }
+    
+    // save
+    if (guiCheckButton(btn_te_save)) {
+        custom_tiles = tile_edit_gui.custom_tiles;
+        custom_num_empty = real(btn_te_emptytiles.myText);
+        sprite_delete(box_te_tiles.sprite_index);
+        custom_tiles_path = tile_edit_gui.iname;
+        custom_num_tiles = tile_edit_gui.num_tiles;
+        
+        for (var i = 0; i &lt; ds_list_size(chunk); i++) {
+            createChunkImage(chunk[| i]);
+        }
+        
+        guiDestroy(tile_edit_gui);
+        exit;
+    }
+    
+    // close
+    if (guiCheckButton(btn_te_close)) {
+        if (sprite_exists(tile_edit_gui.custom_tiles)
+            &amp;&amp; tile_edit_gui.custom_tiles != custom_tiles) {
+                sprite_delete(tile_edit_gui.custom_tiles);
+        }
+        sprite_delete(box_te_tiles.sprite_index);
+        guiDestroy(tile_edit_gui);
+        exit;
+    }
+    
+    if (box_te_tiles.num_empty != real(btn_te_emptytiles.myText)) {
+        sprite_delete(box_te_tiles.sprite_index);
+        box_te_tiles.num_empty = real(btn_te_emptytiles.myText);
+        if (sprite_exists(tile_edit_gui.custom_tiles)) {
+            box_te_tiles.sprite_index = createTileImage(tile_edit_gui.custom_tiles, box_te_tiles.num_empty);
+        }
+        else {
+            box_te_tiles.sprite_index = createTileImage(sprTiles, box_te_tiles.num_empty);
+        }
+        box_te_tiles.myStateChange = true;
+    }
+    
+    // tile shifts
+    if (guiCheckButton(btn_te_shiftm)) {
+        var spr;
+        if (sprite_exists(tile_edit_gui.custom_tiles)) spr = tile_edit_gui.custom_tiles;
+        else spr = sprTiles;
+        for (var i = 0; i &lt; ds_list_size(chunk); i++) {
+            for (var a = 0; a &lt; NUM_TILES_IN_CHUNK; a++) {
+                if (chunk[| i].tile[a] &gt;= real(btn_te_emptytiles.myText) &amp;&amp; chunk[| i].tile[a] &gt; 0) {
+                    chunk[| i].tile[a]--;
+                }
+            }
+            createChunkImage(chunk[| i]);
+        }
+    }
+    
+    if (guiCheckButton(btn_te_shiftp)) {
+        var spr;
+        if (sprite_exists(tile_edit_gui.custom_tiles)) spr = tile_edit_gui.custom_tiles;
+        else spr = sprTiles;
+        for (var i = 0; i &lt; ds_list_size(chunk); i++) {
+            for (var a = 0; a &lt; NUM_TILES_IN_CHUNK; a++) {
+                if (chunk[| i].tile[a] &gt;= real(btn_te_emptytiles.myText) &amp;&amp; chunk[| i].tile[a] &lt; sprite_get_number(spr)) {
+                    chunk[| i].tile[a]++;
+                }
+            }
+            createChunkImage(chunk[| i]);
         }
     }
 }
@@ -1561,24 +1912,59 @@ if (guiExists(export_gui)) {
         <arguments>
           <argument>
             <kind>1</kind>
+            <string>/// button handling - door_dest_gui
+
+if (guiExists(door_dest_gui)) {
+    if (guiCheckButton(btn_dd_cancel)) {
+        ds_list_delete(specobject, specific_object.index);
+        with specific_object {
+            instance_destroy();
+        }
+        for (var i = 0; i &lt; ds_list_size(specobject); i++) {
+            specobject[| i].index = i;
+        }
+    }
+}
+</string>
+          </argument>
+        </arguments>
+      </action>
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
             <string>/// view handling
 
-if (gui_focus == main_gui) {
+if (gui_focus == main_gui || gui_focus == door_dest_gui) {
 
     if (mouse_check_button_pressed(mb_middle)) {
-        mcx = mouse_x;
-        mcy = mouse_y;
+        mcx = device_mouse_x_to_gui(0);
+        mcy = device_mouse_y_to_gui(0);
         vcx = view_xview;
         vcy = view_yview;
     }
     
     if (mouse_check_button(mb_middle)) {
-        view_xview = vcx - round((mouse_x - mcx) / 1.5);
-        view_yview = vcy - round((mouse_y - mcy) / 1.5);
-        mcx = mouse_x;
-        mcy = mouse_y;
-        vcx = view_xview;
-        vcy = view_yview;
+        //view_xview = vcx - round((mouse_x - mcx) / 1.5);
+        //view_yview = vcy - round((mouse_y - mcy) / 1.5);
+        view_xview = vcx - (device_mouse_x_to_gui(0) - mcx);
+        view_yview = vcy - (device_mouse_y_to_gui(0) - mcy);
+        //mcx = mouse_x;
+        //mcy = mouse_y;
+        //vcx = view_xview;
+        //vcy = view_yview;
     }
     
     if (keyboard_check(vk_left)) {
@@ -1595,7 +1981,7 @@ if (gui_focus == main_gui) {
     }
     
     view_xview = clamp(view_xview, 0, room_width - view_wview);
-    view_yview = clamp(view_yview, -main_gui.myHeight+3, room_height - view_hview);
+    view_yview = clamp(view_yview, -(main_gui.myHeight * zoom_level)+3, room_height - view_hview);
 
 }
 </string>
@@ -1632,6 +2018,29 @@ previous_mouse_y = mouse_y;
           </argument>
         </arguments>
       </action>
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>/// player image
+player_image++;
+if (player_image &gt;= 40) player_image = 0;
+</string>
+          </argument>
+        </arguments>
+      </action>
     </event>
     <event eventtype="6" enumb="56">
       <action>
@@ -1650,22 +2059,80 @@ previous_mouse_y = mouse_y;
         <arguments>
           <argument>
             <kind>1</kind>
+            <string>/// door destination
+
+if (gui_focus = door_dest_gui) {
+    if (point_in_rectangle(mouse_x, mouse_y, 0, 0, room_width, room_height)) {
+        specific_object.destx = floor(mouse_x / 16);
+        specific_object.desty = floor(mouse_y / 16);
+        guiDestroy(door_dest_gui);
+        exit;
+    }
+}
+</string>
+          </argument>
+        </arguments>
+      </action>
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
             <string>/// placement
-if (gui_focus == main_gui &amp;&amp; mouse_y - view_yview &gt; main_gui.myHeight) {
+if (gui_focus == main_gui &amp;&amp; device_mouse_y_to_gui(0) &gt; main_gui.myHeight) {
     if (guiGetSelection(main_select) == btn_place_solid) {
             chunk_state[floor(mouse_x / 96) + floor(mouse_y / 96) * 32] = 1;
     }
     else if (guiGetSelection(main_select) == btn_place_chunk) {
-        specific_chunk = instance_create(floor(mouse_x / 96) * 96, floor(mouse_y / 96) * 96, objSpecChunk);
-        ds_list_add(specchunk, specific_chunk);
-        specific_chunk.index = ds_list_size(specchunk) - 1;
+        var o = collision_point(mouse_x, mouse_y, objSpecChunk, false, true);
+        if (!instance_exists(o)) {
+            specific_chunk = instance_create(floor(mouse_x / 96) * 96, floor(mouse_y / 96) * 96, objSpecChunk);
+            ds_list_add(specchunk, specific_chunk);
+            specific_chunk.index = ds_list_size(specchunk) - 1;
+        }
+        else {
+            specific_chunk = o;
+        }
         openSelectChunk(true);
     }
     else if (guiGetSelection(main_select) == btn_place_object) {
-        specific_object = instance_create(floor(mouse_x / 16) * 16, floor(mouse_y / 16) * 16, objSpecObject);
-        ds_list_add(specobject, specific_object);
-        specific_object.index = ds_list_size(specobject) - 1;
+        var o = collision_point(mouse_x, mouse_y, objSpecObject, false, true);
+        if (!instance_exists(o)) {
+            specific_object = instance_create(floor(mouse_x / 16) * 16, floor(mouse_y / 16) * 16, objSpecObject);
+            ds_list_add(specobject, specific_object);
+            specific_object.index = ds_list_size(specobject) - 1;
+        }
+        else {
+            specific_object = o;
+        }
         openObjectSelect(true);
+    }
+    else if (guiGetSelection(main_select) == btn_place_player) {
+        player_x = floor(mouse_x / 16) * 16;
+        player_y = floor(mouse_y / 16) * 16;
+    }
+    else if (guiGetSelection(main_select) == btn_place_tile) {
+        var o = collision_point(mouse_x, mouse_y, objSpecTile, false, true);
+        if (!instance_exists(o)) {
+            specific_tile = instance_create(floor(mouse_x / 16) * 16, floor(mouse_y / 16) * 16, objSpecTile);
+            ds_list_add(spectile, specific_tile);
+            specific_tile.index = ds_list_size(spectile) - 1;
+        }
+        else {
+            specific_tile = o;
+        }
+        openTileSelect(true);
     }
 }
 </string>
@@ -1719,11 +2186,7 @@ if (guiGetSelection(main_select) == btn_place_solid) {
         <arguments>
           <argument>
             <kind>1</kind>
-            <string>if (instance_number(objGUIBase) &lt;= 1)      
-    drawTooltip("Chunk X: " + string(floor(mouse_x / 96)) +
-         " Y: " + string(floor(mouse_y / 96)) + "#Tile X: " +
-         string(floor(mouse_x / 16)) + " Y: " + string(floor(mouse_y / 16)), false);
-</string>
+            <string></string>
           </argument>
         </arguments>
       </action>
@@ -1745,24 +2208,7 @@ if (guiGetSelection(main_select) == btn_place_solid) {
         <arguments>
           <argument>
             <kind>1</kind>
-            <string>/// draw overlays for certain gui's
-/*if (guiExists(chunk_sel_gui) &amp;&amp; chunk_sel_gui.myFocus = true) {
-    for (var i = 0; i &lt; ds_list_size(chunk); i++) {
-        if (btn_cs_chunk[i].y &gt; chunk_sel_gui.y &amp;&amp; btn_cs_chunk[i].visible
-        &amp;&amp; btn_cs_chunk[i].y + btn_cs_chunk[i].myHeight &lt; chunk_sel_gui.y + chunk_sel_gui.myHeight) {
-            var xx = 0;
-            var yy = 0;
-            for (var a = 0; a &lt; 36; a++) {
-                draw_sprite(sprTiles, btn_cs_chunk[i].myChunk.tile[a], btn_cs_chunk[i].x + xx + 2, btn_cs_chunk[i].y + yy + 2);
-                xx += 16;
-                if (xx &gt;= 96) {
-                    xx = 0;
-                    yy += 16;
-                }
-            }
-        }
-    }
-}*/
+            <string>drawMiniMap();
 </string>
           </argument>
         </arguments>
@@ -1828,6 +2274,13 @@ draw_rectangle(tx, ty, tx + 16, ty + 16, true);
 
 
 draw_set_color(c_white);
+
+if (instance_number(objGUIBase) &lt;= 1)      
+    drawTooltipPos(floor(mouse_x / 96) * 96, (floor(mouse_y / 96) * 96) - 32, "Chunk X: " + string(floor(mouse_x / 96)) +
+         " Y: " + string(floor(mouse_y / 96)) + "#Tile X: " +
+         string(floor(mouse_x / 16)) + " Y: " + string(floor(mouse_y / 16)), false);
+         
+draw_sprite(sprPlayer, floor(player_image / 10), player_x, player_y);
 </string>
           </argument>
         </arguments>
@@ -1848,18 +2301,7 @@ draw_set_color(c_white);
         <arguments>
           <argument>
             <kind>1</kind>
-            <string>/// Export button - file_gui
-/*
-exporting needs to happen here so that chunks properly know if
-they are in use or not.
-*/
-
-if (guiExists(file_gui)) {
-    
-    
-    
-}
-</string>
+            <string></string>
           </argument>
         </arguments>
       </action>

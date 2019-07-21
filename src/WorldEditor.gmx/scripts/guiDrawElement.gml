@@ -48,6 +48,10 @@ if (!elID.myOnlyText) {
             if (elID.myInput)    draw_set_color(c_green);
             else    draw_set_color(colLight);
             draw_rectangle(xx, yy, xx+width, yy+height, true);
+            if (elID.myInputType == INPUT_TYPE_INT) {
+                draw_rectangle(xx, yy, xx+height, yy+height, true);
+                draw_rectangle(xx+width-height, yy, xx+width, yy+height, true);
+            }
             draw_set_color(colDarkest);
             draw_rectangle(xx-1, yy-1, xx+width+1, yy+height+1, true);
             draw_set_blend_mode(bm_subtract);
@@ -55,6 +59,11 @@ if (!elID.myOnlyText) {
             draw_sprite_part(sprCanvas, 0, 0, 0, width + 1, height + 1, xx, yy);
             draw_set_alpha(1);
             draw_set_blend_mode(bm_normal);
+            if (elID.myInputType == INPUT_TYPE_INT) {
+                draw_sprite_stretched(sprArrow, 2, xx+1, yy+1, height-2, height-2);
+                draw_sprite_stretched(sprArrow, 0, xx+width-height+1, yy+1, height-2, height-2);
+                elID.myTextPos = 6;
+            }
         }
         else {
             // buttons
@@ -196,7 +205,10 @@ if (elID.myText != " ") {
         draw_set_halign(fa_right);
         draw_set_valign(fa_middle);
         draw_set_alpha(elID.myAlpha_Text);
-        draw_text(round(xx+(width*0.95)),round(yy+(height/2)),text);
+        if (elID.myInputBox)
+            draw_text(round(xx+(width*0.95)-height),round(yy+(height/2)), text);
+        else
+            draw_text(round(xx+(width*0.95)),round(yy+(height/2)),text);
     }
     if (elID.myTextPos == 7) {
         draw_set_halign(fa_left);
@@ -219,3 +231,8 @@ if (elID.myText != " ") {
     //draw_text_transformed(xx+(width/2),yy+(height/2),text,(width*0.8)/string_width(text),(height*0.6)/string_height(text),0);
 }
 draw_set_alpha(1);
+
+if (elID.myDrawScript != -1) {
+    with elID
+        script_execute(myDrawScript);
+}

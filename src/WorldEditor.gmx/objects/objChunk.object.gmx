@@ -32,6 +32,7 @@ name = "unnamed";
 index = 0;
 used_index = 0;
 is_used = false;
+times_used = 0;
 </string>
           </argument>
         </arguments>

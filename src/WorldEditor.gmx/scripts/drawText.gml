@@ -13,7 +13,7 @@ width = argument2;
 height = argument3;
 colMed = argument4;
 text = argument5;
-font = argument7;
+font = argument6;
 
 /*rad = 10;
 var lighter, darker;

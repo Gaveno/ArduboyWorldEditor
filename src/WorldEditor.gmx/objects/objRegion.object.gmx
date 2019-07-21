@@ -38,6 +38,7 @@ name = "unnamed";
 for (var i = 0; i &lt; MAX_CHUNKS_IN_REGION; i++) {
     chunks[i] = noone;
     cused[i] = false;
+    times_used[i] = 0;
 }
     
 width = 0;
@@ -74,6 +75,7 @@ for (var i = 0; i &lt; MAX_CHUNKS_IN_REGION; i++) {
     if (cused[i]) {
         show_debug_message("chunk: " + string(i) + " " + chunks[i].name);
         chunks[i].is_used = true;
+        chunks[i].times_used += times_used[i];
     }
     else {
         all_used = false;
@@ -103,6 +105,7 @@ for (var i = 0; i &lt; MAX_CHUNKS_IN_REGION; i++) {
             <kind>1</kind>
             <string>for (var i = 0; i &lt; MAX_CHUNKS_IN_REGION; i++) {
     cused[i] = false;
+    times_used[i] = 0;
 }
 
 switch (type) {
@@ -114,6 +117,7 @@ switch (type) {
                     if (!getSolidState(xx, yy)) {
                         if (instance_exists(chunks[0])) {
                             cused[0] = true;
+                            times_used[0]++;
                             var sprite = chunks[0].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);
@@ -122,6 +126,7 @@ switch (type) {
                     else {
                         if (instance_exists(chunks[1])) {
                             cused[1] = true;
+                            times_used[1]++;
                             var sprite = chunks[1].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);
@@ -140,6 +145,7 @@ switch (type) {
                     if (getSolidState(xx, yy)) {
                         if (instance_exists(chunks[16])) {
                             cused[16] = true;
+                            times_used[16]++;
                             var sprite = chunks[16].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);
@@ -155,6 +161,7 @@ switch (type) {
                         
                         if (instance_exists(chunks[s])) {
                             cused[s] = true;
+                            times_used[s]++;
                             var sprite = chunks[s].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);
@@ -173,6 +180,7 @@ switch (type) {
                     if (!getSolidState(xx, yy)) {
                         if (instance_exists(chunks[16])) {
                             cused[16] = true;
+                            times_used[16]++;
                             var sprite = chunks[16].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);
@@ -188,6 +196,7 @@ switch (type) {
                         
                         if (instance_exists(chunks[s])) {
                             cused[s] = true;
+                            times_used[s]++;
                             var sprite = chunks[s].sprite_index;
                             if (sprite_exists(sprite) &amp;&amp; rectangle_in_rectangle(xx * 96, yy * 96, xx * 96 +96, yy * 96 +96, view_xview, view_yview, view_xview+view_wview, view_yview+view_hview))
                                 draw_sprite(sprite, 0, xx * 96, yy * 96);

@@ -8,9 +8,9 @@ file_text_writeln(file);
 file_text_writeln(file);
 file_text_writeln(file);
 
-wl(file, "\pdefine TOTAL_REGIONS     " + string(ds_list_size(region)));
-wl(file, "\pdefine LEVEL_CHUNK_W    32");
-wl(file, "\pdefine LEVEL_CHUNK_H    32");
+//wl(file, "\pdefine TOTAL_REGIONS     " + string(ds_list_size(region)));
+//wl(file, "\pdefine LEVEL_CHUNK_W    32");
+//wl(file, "\pdefine LEVEL_CHUNK_H    32");
 file_text_writeln(file);
 file_text_writeln(file);
 file_text_write_string(file, "const unsigned char PROGMEM regions[] = ");
@@ -74,7 +74,7 @@ file_text_writeln(file);
 file_text_writeln(file);
 file_text_writeln(file);
 
-wl(file, "
+/*wl(file, "
 byte getChunk(const Point &chunk_pos);
 bool getChunkBit(const byte &chunk_x, const byte &chunk_y);
 byte getTileInChunk(const byte &chunk, const Point &tile_pos);
@@ -83,7 +83,7 @@ bool getSolid(const Point &world_pos);
 byte getTileID(const Point &world_pos);
 byte getRegion(const Point &chunk_pos);
 
-");
+");*/
 
 /*int rx = pgm_read_byte(regions + i * 4) * 96;
       int ry = pgm_read_byte(regions + 1 + i * 4) * 96;
@@ -97,32 +97,50 @@ byte getRegion(const Point &chunk_pos);
 
 // getRegion
 wl(file, "
-byte getRegion(const Point &chunk_pos)
+byte getRegion(byte chunk_pos_x, byte chunk_pos_y)
 {
   for (byte i = 0; i < TOTAL_REGIONS; i++)
   {
-      Rect reg = {.x = pgm_read_byte(regions + i * 4), .y = pgm_read_byte(regions + 1 + i * 4),
-                .width = pgm_read_byte(regions + 2 + i * 4), .height = pgm_read_byte(regions + 3 + i * 4) };
-      if (arduboy.collide(chunk_pos, reg)) return i;
+    Point chunk_pos = { .x = chunk_pos_x, .y = chunk_pos_y};
+    Rect reg = {.x = pgm_read_byte(regions + i * 4), .y = pgm_read_byte(regions + 1 + i * 4),
+                .width = pgm_read_byte(regions + 2 + i * 4), .height = pgm_read_byte(regions + 3 + i * 4)
+               };
+    if (arduboy.collide(chunk_pos, reg)) return i;
   }
-  return 255;     // error
+  return 255; // error
 }
 
 ");
 
 // getTileID
 wl(file, "
-byte getTileID(const Point &world_pos)
+byte getTileID(int world_pos_x, int world_pos_y)
 {
-    Point chunk_pos = { .x = world_pos.x / 96, .y = world_pos.y / 96 };
-    byte chunk = getChunk(chunk_pos);
-    byte tile = getTileInChunk(chunk, world_to_chunk(world_pos));
+    switch ((world_pos_x >> 4) + (world_pos_y >> 4) * 192)
+    {");
+for (var i = 0; i < ds_list_size(spectile); i++) {
+    wl(file, "      case " + string(floor(spectile[| i].x / 16) + floor(spectile[| i].y / 16) * 192) + ": return " + string(spectile[| i].tile) + ";");
+}
+
+wl(file, "   }
     
-    switch(tile)
+    byte chunk = getChunk(world_pos_x / 96, world_pos_y / 96);
+    byte tile_pos_x = (world_pos_x % 96) >> 4;
+    byte tile_pos_y = (world_pos_y % 96) >> 4;
+    byte tile = getTileInChunk(chunk, tile_pos_x, tile_pos_y);
+    
+    // Support for animated tiles
+    /*switch(tile)
     {
-      case 25: tile += waterframe; break;
-      case 26: tile -= waterframe; break;
-    }
+      // First frame
+      case 14:
+      case 33:
+      tile += waterframe; break;
+      // Second frame
+      case 15:
+      case 34:
+      tile -= waterframe; break;
+    }*/
     
     return tile;
 }
@@ -133,8 +151,8 @@ byte getTileID(const Point &world_pos)
 wl(file, "
 bool getChunkBit(const byte &chunk_x, const byte &chunk_y)
 {
-  if (chunk_x < 0 || chunk_x >= LEVEL_CHUNK_W
-  || chunk_y < 0 || chunk_y >= LEVEL_CHUNK_H)
+  if (chunk_x >= LEVEL_CHUNK_W
+  || chunk_y >= LEVEL_CHUNK_H)
     return 1;
     
   byte x = chunk_x / 8;           // 8 is number of chunks per byte
@@ -148,39 +166,28 @@ bool getChunkBit(const byte &chunk_x, const byte &chunk_y)
 ");
 
 // getTileInChunk
-wl(file, "
-byte getTileInChunk(const byte &chunk, const Point &tile_pos)
-{
-  return pgm_read_byte(chunks + ((chunk & 0x7F) * 36) + tile_pos.x + tile_pos.y * 6);
-}
+//wl(file, "
+//byte getTileInChunk(const byte &chunk, int tile_pos_x, int tile_pos_y)
+//{
+//  return pgm_read_byte(chunks + ((chunk & 0x7F) * 36) + tile_pos_x + tile_pos_y * 6);
+//}
 
-");
-
-// getSolid
-wl(file, "
-bool getSolid(const Point &world_pos)
-{
-  return (getTileID(world_pos) >= 8);
-}
-
-");
+//");
 
 // getSolid
 wl(file, "
-bool getSolid(const int &world_x, const int &world_y)
+bool getSolid(int world_pos_x, int world_pos_y)
 {
-  Point world_pos = {.x = world_x, .y = world_y };
-  return (getTileID(world_pos) >= 8);
+  return (getTileID(world_pos_x, world_pos_y) >= " + string(custom_num_empty) + ");
 }
 
 ");
 
 // world_to_chunk
 wl(file, "
-Point world_to_chunk(const Point &world_pos)
+byte world_to_chunk(int world_pos_v)
 {
-    Point out = {.x = (world_pos.x % 96) / 16, .y = (world_pos.y % 96) / 16 };
-    return out;
+    return (world_pos_v % 96) >> 4;
 }
 
 ");
@@ -196,16 +203,17 @@ wl(file, "
 // less than 128.
 // To get the actual chunk value of a specific chunk, AND (&) the returned
 // chunk with 0x7F (B01111111)
-byte getChunk(const Point &chunk_pos)
+byte getChunk(const byte &chunk_pos_x, const byte &chunk_pos_y)
 {
     // specific chunks
-    switch (chunk_pos.x + chunk_pos.y * 32)
+    switch (chunk_pos_x + chunk_pos_y * 32)
     {");
 
 // specific chunks
 for (var i = 0; i < ds_list_size(specchunk); i++) {
     file_text_write_string(file, "        case " + string(floor(specchunk[| i].x / 96) + floor(specchunk[| i].y / 96) * 32) + ": return " +
-    string(specchunk[| i].myChunk.used_index | 128) + "; break; // " + specchunk[| i].myChunk.name);
+    string(specchunk[| i].myChunk.used_index | 128) + "; break; // " + specchunk[| i].myChunk.name + " chunk_x: " + string(floor(specchunk[| i].x / 96))
+    + " chunk_y: " + string(floor(specchunk[| i].y / 96)));
     file_text_writeln(file);
 }
 file_text_write_string(file, "    }");
@@ -215,34 +223,38 @@ file_text_writeln(file);
 // regions
 wl(file, "
     // regions
-    switch (getRegion(chunk_pos))
+    switch (getRegion(chunk_pos_x, chunk_pos_y))
     {");
 for (var i = 0; i < ds_list_size(ordered_regions); i++) {
     wl(file, "        case " + string(i) + ":  // " + ordered_regions[| i].name + "
         {");
     
-    if (ordered_regions[| i].type == 0) { // binary
-        wl(file, "            if (!getChunkBit(chunk_pos.x, chunk_pos.y))
+    if (ordered_regions[| i].type == 0 && instance_exists(ordered_regions[| i].chunks[0])) { // binary
+        wl(file, "            if (!getChunkBit(chunk_pos_x, chunk_pos_y))
             {
                 return " + string(ordered_regions[| i].chunks[0].used_index) + ";
-            }
+            }");
+        if (instance_exists(ordered_regions[| i].chunks[1])) {
+            wl(file, "
             else
             {
                 return " + string(ordered_regions[| i].chunks[1].used_index) + ";
             }");
+        }
     }
     else if (ordered_regions[| i].type == 1) { // empty defined
-        wl(file, "            if (getChunkBit(chunk_pos.x, chunk_pos.y))
+        wl(file, "            if (getChunkBit(chunk_pos_x, chunk_pos_y))
             {
+                // solid chunk
                 return " + string(ordered_regions[| i].chunks[16].used_index) + ";
             }
             else
             {
                 byte b = 0;
-                b |= getChunkBit(chunk_pos.x + 1, chunk_pos.y);
-                b |= getChunkBit(chunk_pos.x, chunk_pos.y - 1) << 1;
-                b |= getChunkBit(chunk_pos.x - 1, chunk_pos.y) << 2;
-                b |= getChunkBit(chunk_pos.x, chunk_pos.y + 1) << 3;");
+                b |= getChunkBit(chunk_pos_x + 1, chunk_pos_y);
+                b |= getChunkBit(chunk_pos_x, chunk_pos_y - 1) << 1;
+                b |= getChunkBit(chunk_pos_x - 1, chunk_pos_y) << 2;
+                b |= getChunkBit(chunk_pos_x, chunk_pos_y + 1) << 3;");
                 
                 if (ordered_regions[| i].all_used && false) {
                     wl(file, "
@@ -265,17 +277,17 @@ for (var i = 0; i < ds_list_size(ordered_regions); i++) {
                 }
     }
     else if (ordered_regions[| i].type == 2) { // solid defined
-        wl(file, "            if (!getChunkBit(chunk_pos.x, chunk_pos.y))
+        wl(file, "            if (!getChunkBit(chunk_pos_x, chunk_pos_y))
             {
                 return " + string(ordered_regions[| i].chunks[16].used_index) + ";
             }
             else
             {
                 byte b = 0;
-                b |= getChunkBit(chunk_pos.x + 1, chunk_pos.y);
-                b |= getChunkBit(chunk_pos.x, chunk_pos.y - 1) << 1;
-                b |= getChunkBit(chunk_pos.x - 1, chunk_pos.y) << 2;
-                b |= getChunkBit(chunk_pos.x, chunk_pos.y + 1) << 3;");
+                b |= getChunkBit(chunk_pos_x + 1, chunk_pos_y);
+                b |= getChunkBit(chunk_pos_x, chunk_pos_y - 1) << 1;
+                b |= getChunkBit(chunk_pos_x - 1, chunk_pos_y) << 2;
+                b |= getChunkBit(chunk_pos_x, chunk_pos_y + 1) << 3;");
                 
                 if (ordered_regions[| i].all_used && false) {
                     wl(file, "
@@ -333,6 +345,11 @@ if (savei) {
     for (var i = 0; i < ds_list_size(specchunk); i++) {
         with specchunk[| i] {
             drawSpecChunk();
+        }
+    }
+    for (var i = 0; i < ds_list_size(spectile); i++) {
+        with spectile[| i] {
+            drawSpecTile();
         }
     }
     for (var i = 0; i < ds_list_size(specobject); i++) {

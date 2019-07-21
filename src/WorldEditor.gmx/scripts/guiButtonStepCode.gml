@@ -31,8 +31,10 @@ if (myGUI.Visible && fake = false && gui_focus == myGUI && visible) {
     mouseguix = x_av;
     mouseguiy = y_av;*/
     
-    mouseguix = mouse_x - view_xview;
-    mouseguiy = mouse_y - view_yview;
+    /*mouseguix = mouse_x - view_xview;
+    mouseguiy = mouse_y - view_yview;*/
+    mouseguix = device_mouse_x_to_gui(0);
+    mouseguiy = device_mouse_y_to_gui(0);
     
     
     if (os_type == os_windows)
@@ -67,9 +69,30 @@ if (myGUI.Visible && fake = false && gui_focus == myGUI && visible) {
                 
                 // input box
                 if (myInputBox) {
-                    myInput = true;
-                    myInputString = myText;
-                    myCursor = string_length(myInputString) + 1;
+                    if (myInputType == INPUT_TYPE_INT) {
+                        if (point_in_rectangle(mouseguix, mouseguiy, x, y, x+myHeight, y+myHeight)) {
+                            // Decrement
+                            myInputValueInt--;
+                            myInputValueInt = clamp(myInputValueInt, myInputMin, myInputMax);
+                            myText = string(myInputValueInt);
+                        }
+                        else if (point_in_rectangle(mouseguix, mouseguiy, x+myWidth-myHeight, y, x+myWidth, y+myHeight)) {
+                            // Increment
+                            myInputValueInt++;
+                            myInputValueInt = clamp(myInputValueInt, myInputMin, myInputMax);
+                            myText = string(myInputValueInt);
+                        }
+                        else {
+                            myInput = true;
+                            myInputString = myText;
+                            myCursor = string_length(myInputString) + 1;
+                        }
+                    }
+                    else {
+                        myInput = true;
+                        myInputString = myText;
+                        myCursor = string_length(myInputString) + 1;
+                    }
                 }
             }
         } else {

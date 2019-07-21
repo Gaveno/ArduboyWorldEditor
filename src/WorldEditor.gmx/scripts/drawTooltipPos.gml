@@ -21,8 +21,8 @@ if (timer || objControl.tooltip <= 0) {
     if (yy + string_height(str) + 3 > view_hview) {
         yy = view_hview-6-string_height(str);
     }*/
-    xx = clamp(xx, 0, view_wview-6-string_width(str));
-    yy = clamp(yy, 0, view_hview-6-string_height(str))
+    xx = clamp(xx, 0, view_xview+view_wview-6-string_width(str));
+    yy = clamp(yy, 0, view_yview+view_hview-6-string_height(str))
 
     draw_rectangle(xx - 3, yy - 2, xx + string_width(str) + 3,
                  yy + string_height(str) + 2, false);

@@ -76,6 +76,9 @@ myChecked = false;
 // selection box
 mySelection = false;
 mySelectionParent = noone;
+
+// extra draw script for element
+myDrawScript = -1;
 </string>
           </argument>
         </arguments>

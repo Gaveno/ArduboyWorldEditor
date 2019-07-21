@@ -31,6 +31,33 @@ IID = 0;
 myObject = noone;
 image_index = 5;
 name = "unnamed";
+
+//doors
+destx = -1;
+desty = -1;
+</string>
+          </argument>
+        </arguments>
+      </action>
+    </event>
+    <event eventtype="3" enumb="0">
+      <action>
+        <libid>1</libid>
+        <id>603</id>
+        <kind>7</kind>
+        <userelative>0</userelative>
+        <isquestion>0</isquestion>
+        <useapplyto>-1</useapplyto>
+        <exetype>2</exetype>
+        <functionname></functionname>
+        <codestring></codestring>
+        <whoName>self</whoName>
+        <relative>0</relative>
+        <isnot>0</isnot>
+        <arguments>
+          <argument>
+            <kind>1</kind>
+            <string>//if (!instance_exists(myObject)) instance_destroy();
 </string>
           </argument>
         </arguments>
@@ -55,14 +82,24 @@ name = "unnamed";
             <kind>1</kind>
             <string>/// select object to use
 
-if (keyboard_check(vk_control)) {
-    ds_list_delete(objControl.specobject, index);
-    instance_destroy();
-}
-else if (gui_focus == objControl.main_gui) {
-    objControl.specific_object = id;
-    with objControl {
-        openObjectSelect(true);
+if (guiGetSelection(objControl.main_select) == objControl.btn_place_object) {
+    if (keyboard_check(vk_control)) {
+        ds_list_delete(objControl.specobject, index);
+        for (var i = 0; i &lt; ds_list_size(objControl.specobject); i++) {
+            if (instance_exists(objControl.specobject[| i]))
+                objControl.specobject[| i].index = i;
+            else {
+                ds_list_delete(objControl.specobject, i);
+                i--;
+            }
+        }
+        instance_destroy();
+    }
+    else if (gui_focus == objControl.main_gui) {
+        objControl.specific_object = id;
+        with objControl {
+            openObjectSelect(true);
+        }
     }
 }
 </string>
@@ -88,7 +125,7 @@ else if (gui_focus == objControl.main_gui) {
           <argument>
             <kind>1</kind>
             <string>if (point_in_rectangle(mouse_x, mouse_y, x, y, x + 15, y + 15) &amp;&amp; gui_focus == objControl.main_gui &amp;&amp; is_real(myObject) &amp;&amp; instance_exists(myObject)) {
-    drawTooltip("Object ID: " + string(myObject.index) + " Instance ID: " + string(IID));
+    drawTooltip("Name: " + name + "#Object ID: " + string(myObject.index) + "#Instance ID: " + string(IID));
 }
 </string>
           </argument>
@@ -117,13 +154,17 @@ else if (gui_focus == objControl.main_gui) {
 
 
 if (objControl.btn_show_objects.myChecked) {
+    var text = name;
+    if (destx != -1 &amp;&amp; desty != -1) {
+        text += "#destination:#x: " + string(destx) + " y: " + string(desty);
+    }
     draw_set_alpha(0.3);
     draw_set_color(c_yellow);
     draw_rectangle(x, y, x + 15, y + 15, false);
     draw_set_color(c_white);
     draw_set_alpha(1);
     draw_set_font(fontMicro);
-    drawTooltipPos(x - 17, y - 17, name, true);
+    drawTooltipPos(x + 16, y, text, true);
 }
 
 

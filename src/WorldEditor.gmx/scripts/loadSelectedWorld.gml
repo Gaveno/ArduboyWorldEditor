@@ -55,7 +55,7 @@ if (file_exists(w + ".awd")) {
     }
     
     // objects
-    var line = file_text_read_string(file);
+    line = file_text_read_string(file);
     file_text_readln(file);
     if (line == "___objects___") {
     //if (file_exists(w + "\objects.dat")) {
@@ -86,7 +86,7 @@ if (file_exists(w + ".awd")) {
     
     
     // specific objects
-    var line = file_text_read_string(file);
+    line = file_text_read_string(file);
     file_text_readln(file);
     if (line == "___specobjects___") {
     //if (file_exists(w + "\specobjects.dat")) {
@@ -103,6 +103,10 @@ if (file_exists(w + ".awd")) {
                 c.x = real(file_text_read_string(file));
                 file_text_readln(file);
                 c.y = real(file_text_read_string(file));
+                file_text_readln(file);
+                c.destx = real(file_text_read_string(file));
+                file_text_readln(file);
+                c.desty = real(file_text_read_string(file));
                 file_text_readln(file);
                 c.image_index = real(file_text_read_string(file));
                 file_text_readln(file);
@@ -129,7 +133,7 @@ if (file_exists(w + ".awd")) {
     }
     
     // specific chunks
-    var line = file_text_read_string(file);
+    line = file_text_read_string(file);
     file_text_readln(file);
     if (line == "___specchunks___") {
     //if (file_exists(w + "\specchunks.dat")) {
@@ -147,6 +151,7 @@ if (file_exists(w + ".awd")) {
                 file_text_readln(file);
                 c.y = real(file_text_read_string(file));
                 file_text_readln(file);
+                c.index = ds_list_size(specchunk) - 1;
             }
             else {
                 show_message("Currupt specific chunk file!");
@@ -161,7 +166,7 @@ if (file_exists(w + ".awd")) {
     }
     
     // regions
-    var line = file_text_read_string(file);
+    line = file_text_read_string(file);
     file_text_readln(file);
     if (line == "___regions___") {
     //if (file_exists(w + "\regions.dat")) {
@@ -205,15 +210,61 @@ if (file_exists(w + ".awd")) {
         }
         
         //file_text_close(file);
-        guiDestroy(world_sel_gui);
-        exit;
+        
     }
     else {
         show_message("Currupt world file!#Error: could not read region data!");
         exit;
     }
     
+    var line = file_text_read_string(file);
+    //show_debug_message(line);
+    while (!file_text_eof(file)) {
+        if (line == "___player___") {
+            file_text_readln(file);
+            player_x = real(file_text_read_string(file));
+            file_text_readln(file);
+            player_y = real(file_text_read_string(file));
+            
+        }
+        else if (line == "___tiles___") {
+            file_text_readln(file);
+            custom_num_empty = real(file_text_read_string(file));
+            file_text_readln(file);
+            custom_num_tiles = real(file_text_read_string(file));
+            if (file_exists(w + "_tiles.png")) {
+                if (sprite_exists(custom_tiles))
+                    sprite_delete(custom_tiles);
+                custom_tiles = sprite_add(w + "_tiles.png", custom_num_tiles, false, false, 0, 0);
+                for (var i = 0; i < ds_list_size(chunk); i++) {
+                    createChunkImage(chunk[| i]);
+                }
+            }
+        }
+        else if (line == "___spectiles___") {
+            file_text_readln(file);
+            n = string_digits(file_text_read_string(file));
+            while (string_length(n) == 1 || string_length(n) == 2) {
+                file_text_readln(file);
+                var nx = real(file_text_read_string(file));
+                file_text_readln(file);
+                var ny = real(file_text_read_string(file));
+                var s = instance_create(nx, ny, objSpecTile);
+                s.tile = real(n);
+                ds_list_add(spectile, s);
+                file_text_readln(file);
+                n = string_digits(file_text_read_string(file));
+            }
+        }
+        file_text_readln(file);
+        line = file_text_read_string(file);
+        //show_debug_message(line);
+    }
+    
     file_text_close(file);
+    
+    guiDestroy(world_sel_gui);
+    exit;
 }
 else {
     show_message("World files corrupt or do not exist!");

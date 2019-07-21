@@ -3,7 +3,7 @@
   <Configs name="configs">
     <Config>Configs\Default</Config>
   </Configs>
-  <datafiles number="15" name="datafiles">
+  <datafiles number="18" name="datafiles">
     <datafile>
       <name>ChunkEdit.gui</name>
       <exists>-1</exists>
@@ -259,6 +259,57 @@
       </ConfigOptions>
       <filename>Export.gui</filename>
     </datafile>
+    <datafile>
+      <name>TileEdit.gui</name>
+      <exists>-1</exists>
+      <size>326</size>
+      <exportAction>2</exportAction>
+      <exportDir></exportDir>
+      <overwrite>0</overwrite>
+      <freeData>-1</freeData>
+      <removeEnd>0</removeEnd>
+      <store>0</store>
+      <ConfigOptions>
+        <Config name="Default">
+          <CopyToMask>9223372036854775807</CopyToMask>
+        </Config>
+      </ConfigOptions>
+      <filename>TileEdit.gui</filename>
+    </datafile>
+    <datafile>
+      <name>ExportWait.gui</name>
+      <exists>-1</exists>
+      <size>132</size>
+      <exportAction>2</exportAction>
+      <exportDir></exportDir>
+      <overwrite>0</overwrite>
+      <freeData>-1</freeData>
+      <removeEnd>0</removeEnd>
+      <store>0</store>
+      <ConfigOptions>
+        <Config name="Default">
+          <CopyToMask>9223372036854775807</CopyToMask>
+        </Config>
+      </ConfigOptions>
+      <filename>ExportWait.gui</filename>
+    </datafile>
+    <datafile>
+      <name>DoorDestination.gui</name>
+      <exists>-1</exists>
+      <size>193</size>
+      <exportAction>2</exportAction>
+      <exportDir></exportDir>
+      <overwrite>0</overwrite>
+      <freeData>-1</freeData>
+      <removeEnd>0</removeEnd>
+      <store>0</store>
+      <ConfigOptions>
+        <Config name="Default">
+          <CopyToMask>9223372036854775807</CopyToMask>
+        </Config>
+      </ConfigOptions>
+      <filename>DoorDestination.gui</filename>
+    </datafile>
   </datafiles>
   <NewExtensions>
     <extension index="0">extensions\GUI_Scalable</extension>
@@ -266,13 +317,16 @@
   <sounds name="sound"/>
   <sprites name="sprites">
     <sprite>sprites\sprPixel</sprite>
-    <sprite>sprites\sprTiles</sprite>
+    <sprite>sprites\sprTiles4</sprite>
     <sprite>sprites\sprDemoChunks</sprite>
     <sprite>sprites\sprBlankChunk</sprite>
     <sprite>sprites\sprCheck</sprite>
-    <sprite>sprites\sprTiles3</sprite>
+    <sprite>sprites\sprTiles</sprite>
     <sprite>sprites\sprObjects</sprite>
     <sprite>sprites\sprCanvas</sprite>
+    <sprite>sprites\sprPlayer</sprite>
+    <sprite>sprites\sprBlankTile</sprite>
+    <sprite>sprites\sprArrow</sprite>
   </sprites>
   <backgrounds name="background">
     <background>background\background0</background>
@@ -364,7 +418,9 @@
       <script>scripts\loadSelectedWorld.gml</script>
       <script>scripts\createChunkImage.gml</script>
       <script>scripts\openConfirmDelete.gml</script>
-      <script>scripts\exportWorld.gml</script>
+      <script>scripts\destroySpecChunk.gml</script>
+      <script>scripts\destroySpecTile.gml</script>
+      <script>scripts\openTileSelect.gml</script>
     </scripts>
     <script>scripts\getSolidState.gml</script>
     <script>scripts\file_write_if_new.gml</script>
@@ -375,11 +431,26 @@
       <script>scripts\valueToHex.gml</script>
       <script>scripts\writeRegions.gml</script>
       <script>scripts\wl.gml</script>
+      <script>scripts\exportWorld2.gml</script>
+      <script>scripts\exportWorld.gml</script>
+      <scripts name="TileExport">
+        <script>scripts\writeTiles.gml</script>
+        <script>scripts\writeTile.gml</script>
+        <script>scripts\writeTiles_old.gml</script>
+        <script>scripts\spriteToBytes.gml</script>
+        <script>scripts\imageToBytes.gml</script>
+        <script>scripts\createTileImage.gml</script>
+      </scripts>
+      <script>scripts\writeDoors.gml</script>
+      <script>scripts\writeDoors_original.gml</script>
     </scripts>
     <scripts name="Drawing">
       <script>scripts\drawRegion.gml</script>
       <script>scripts\drawSpecChunk.gml</script>
       <script>scripts\drawSpecObject.gml</script>
+      <script>scripts\drawMiniMap.gml</script>
+      <script>scripts\drawSpecTile.gml</script>
+      <script>scripts\drawChunkStat.gml</script>
     </scripts>
   </scripts>
   <fonts name="fonts">
@@ -401,6 +472,7 @@
     <object>objects\objChunk</object>
     <object>objects\objRegion</object>
     <object>objects\objSpecChunk</object>
+    <object>objects\objSpecTile</object>
     <object>objects\objSpecObject</object>
     <object>objects\objObject</object>
   </objects>

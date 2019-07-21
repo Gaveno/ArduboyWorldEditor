@@ -3,9 +3,36 @@
 world_external_name = argument0;
 var savedir = "saves\" + world_external_name;
 
+var error = false;
+for (var i = 0; i < ds_list_size(region); i++) {
+    if (region.type == 0) {
+        if (!(instance_exists(region[| i].chunks[0]) && instance_exists(region[| i].chunks[1])))
+        {
+            error = true;
+        }
+    }
+    else {
+        for (var a = 0; a < MAX_CHUNKS_IN_REGION; a++) {
+            if (!instance_exists(region[| i].chunks[a])) {
+                error = true;
+            }
+        }
+    }
+}
+
+if (error) {
+    show_message("Error: Cannot save world!#Must define all chunks for every region!");
+    exit;
+}
+
 if (string_length(world_external_name) > 0) {
-    // world list
-    //file_write_if_new("worlds.txt", world_external_name);
+    // custom tileset
+    if (string_length(custom_tiles_path) > 0 && file_exists(custom_tiles_path)) {
+        if (file_exists(savedir + "_tiles.png"))
+            file_delete(savedir + "_tiles.png");
+        file_copy(custom_tiles_path, savedir + "_tiles.png");
+        custom_tiles_path = "";
+    }
     
     if (file_exists(savedir + ".awd")) {
         file_copy(savedir + ".awd", "backups\" + world_external_name + "_" + string(current_month) + string(current_day) + string(current_hour)
@@ -57,6 +84,19 @@ if (string_length(world_external_name) > 0) {
     //file = file_text_open_write(savedir + "\specobjects.dat");
     file_text_write_string(file, "___specobjects___");
     file_text_writeln(file);
+    for (var i = 0; i < ds_list_size(specobject); i++) {
+        if (!instance_exists(specobject[| i])) {
+            ds_list_delete(specobject, i);
+            i--;
+        }
+        if (!instance_exists(specobject[| i].myObject)) {
+            with specobject[| i] {
+                instance_destroy();
+            }
+            ds_list_delete(specobject, i);
+            i--;
+        }
+    }
     file_text_write_string(file, string(ds_list_size(specobject)));
     file_text_writeln(file);
     for (var i = 0; i < ds_list_size(specobject); i++) {
@@ -66,6 +106,10 @@ if (string_length(world_external_name) > 0) {
             file_text_write_string(file, string(specobject[| i].x));
             file_text_writeln(file);
             file_text_write_string(file, string(specobject[| i].y));
+            file_text_writeln(file);
+            file_text_write_string(file, string(specobject[| i].destx));
+            file_text_writeln(file);
+            file_text_write_string(file, string(specobject[| i].desty));
             file_text_writeln(file);
             file_text_write_string(file, string(specobject[| i].image_index));
             file_text_writeln(file);
@@ -81,6 +125,16 @@ if (string_length(world_external_name) > 0) {
     //file = file_text_open_write(savedir + "\specchunks.dat");
     file_text_write_string(file, "___specchunks___");
     file_text_writeln(file);
+    for (var i = 0; i < ds_list_size(specchunk); i++) {
+        if (!instance_exists(specchunk[| i].myChunk) || specchunk[| i].sprite_index == sprBlankChunk) {
+            with specchunk[| i] {
+                instance_destroy();
+            }
+            ds_list_delete(specchunk, i);
+            i--;
+        }
+        specchunk[| i].index = i;
+    }
     file_text_write_string(file, string(ds_list_size(specchunk)));
     file_text_writeln(file);
     for (var i = 0; i < ds_list_size(specchunk); i++) {
@@ -129,6 +183,37 @@ if (string_length(world_external_name) > 0) {
             }
         }
     }
+    
+    // player start location
+    file_text_write_string(file, "___player___");
+    file_text_writeln(file);
+    file_text_write_string(file, string(player_x));
+    file_text_writeln(file);
+    file_text_write_string(file, string(player_y));
+    file_text_writeln(file);
+    
+    // custom tileset
+    file_text_write_string(file, "___tiles___");
+    file_text_writeln(file);
+    file_text_write_string(file, string(custom_num_empty));
+    file_text_writeln(file);
+    file_text_write_string(file, string(custom_num_tiles));
+    file_text_writeln(file);
+    
+    // specific tiles
+    if (ds_list_size(spectile) > 0) {
+        file_text_write_string(file, "___spectiles___");
+        file_text_writeln(file);
+        for (var i = 0; i < ds_list_size(spectile); i++) {
+            file_text_write_string(file, string(spectile[| i].tile));
+            file_text_writeln(file);
+            file_text_write_string(file, string(spectile[| i].x));
+            file_text_writeln(file);
+            file_text_write_string(file, string(spectile[| i].y));
+            file_text_writeln(file);
+        }
+    }
+    
     file_text_close(file);
     
     if (saveextra) {
